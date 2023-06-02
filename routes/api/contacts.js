@@ -10,6 +10,11 @@ const contactAddSchema = Joi.object({
   name: Joi.string().required(),
   email: Joi.string().required(),
   phone: Joi.string().required(),
+  favorite: Joi.boolean().required(),
+});
+
+const contactFavoriteSchema = Joi.object({
+  favorite: Joi.boolean().required(),
 });
 
 router.get("/", async (req, res, next) => {
@@ -36,12 +41,22 @@ router.get("/:id", async (req, res, next) => {
 
 router.post("/", async (req, res, next) => {
   try {
-    const { name, email, phone } = req.body;
-    const { error } = contactAddSchema.validate({ name, email, phone });
+    const { name, email, phone, favorite } = req.body;
+    const { error } = contactAddSchema.validate({
+      name,
+      email,
+      phone,
+      favorite,
+    });
     if (error) {
       throw HttpError(400, error.message);
     }
-    const result = await contactsService.addContact({ name, email, phone });
+    const result = await contactsService.addContact({
+      name,
+      email,
+      phone,
+      favorite,
+    });
     res.status(201).json(result);
   } catch (error) {
     next(error);
@@ -65,8 +80,13 @@ router.delete("/:id", async (req, res, next) => {
 
 router.put("/:id", async (req, res, next) => {
   try {
-    const { name, email, phone } = req.body;
-    const { error } = contactAddSchema.validate({ name, email, phone });
+    const { name, email, phone, favorite } = req.body;
+    const { error } = contactAddSchema.validate({
+      name,
+      email,
+      phone,
+      favorite,
+    });
     if (error) {
       throw HttpError(400, error.message);
     }
@@ -76,7 +96,29 @@ router.put("/:id", async (req, res, next) => {
       name,
       email,
       phone,
+      favorite,
     });
+    if (!result) {
+      throw HttpError(404, "Not found");
+    }
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch("/:id/favorite", async (req, res, next) => {
+  try {
+    const { favorite } = req.body;
+    const { error } = contactFavoriteSchema.validate({ favorite });
+
+    if (error) {
+      throw HttpError(400, "Missing field favorite");
+    }
+
+    const { id } = req.params;
+    const result = await contactsService.updateContactStatus(id, { favorite });
+
     if (!result) {
       throw HttpError(404, "Not found");
     }
