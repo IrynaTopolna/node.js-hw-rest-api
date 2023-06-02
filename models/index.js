@@ -1,58 +1,68 @@
-const fs = require("fs/promises");
-const path = require("path");
-const { nanoid } = require("nanoid");
+// const fs = require("fs/promises");
+// const path = require("path");
+// const { nanoid } = require("nanoid");
+const mongoose = require("mongoose");
 
-const contactsPath = path.resolve("models", "contacts.json");
+const contactSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, "Set name for contact"],
+    },
+    email: {
+      type: String,
+    },
+    phone: {
+      type: String,
+    },
+    favorite: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { versionKey: false }
+);
 
-const updateContactsList = async (allContacts) =>
-  await fs.writeFile(contactsPath, JSON.stringify(allContacts, null, 2));
+const Contact = mongoose.model("Contact", contactSchema);
 
 const getAllContacts = async () => {
-  const allContacts = await fs.readFile(contactsPath);
-  return JSON.parse(allContacts);
+  const allContacts = await Contact.find();
+  return allContacts;
 };
 
 const getContactById = async (id) => {
-  const allContacts = await getAllContacts();
-  const contact = allContacts.find((contact) => contact.id === id);
-  return contact || null;
+  const contact = Contact.findById(id);
+  return contact;
 };
 
 const removeContact = async (id) => {
-  const allContacts = await getAllContacts();
-  const index = allContacts.findIndex((contact) => contact.id === id);
-  if (index === -1) {
-    return null;
-  }
-  const [contact] = allContacts.splice(index, 1);
-  await updateContactsList(allContacts);
+  const contact = await Contact.findByIdAndDelete(id);
   return contact;
 };
 
 const addContact = async (body) => {
-  const allContacts = await getAllContacts();
-
-  const newContact = {
-    id: nanoid(),
+  const newContact = await Contact.create({
     name: body.name,
     email: body.email,
     phone: body.phone,
-  };
+    favorite: body.favorite,
+  });
 
-  allContacts.push(newContact);
-  await updateContactsList(allContacts);
   return newContact;
 };
 
 const updateContact = async (id, body) => {
-  const allContacts = await getAllContacts();
-  const index = allContacts.findIndex((contact) => contact.id === id);
-  if (index === -1) {
-    return null;
-  }
-  allContacts[index] = { id, ...body };
-  await updateContactsList(allContacts);
-  return allContacts[index];
+  const contact = await Contact.findByIdAndUpdate(id, body, {
+    new: true,
+  });
+  return contact;
+};
+
+const updateContactStatus = async (id, body) => {
+  const contact = await Contact.findByIdAndUpdate(id, body, {
+    new: true,
+  });
+  return contact;
 };
 
 module.exports = {
@@ -61,4 +71,5 @@ module.exports = {
   removeContact,
   addContact,
   updateContact,
+  updateContactStatus,
 };
